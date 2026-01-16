@@ -21,6 +21,17 @@ from .sources.google_scholar import GoogleScholarSearcher
 from .sources.iacr import IACRSearcher
 from .sources.semantic import SemanticSearcher
 from .sources.crossref import CrossRefSearcher
+from .sources.pmc import PMCSearcher
+from .sources.sciencedirect import ScienceDirectSearcher
+from .sources.springer import SpringerSearcher
+from .sources.ieee import IEEESearcher
+from .sources.acm import ACMSearcher
+from .sources.wos import WOSSearcher
+from .sources.scopus import ScopusSearcher
+from .sources.jstor import JSTORSearcher
+from .sources.researchgate import ResearchGateSearcher
+from .sources.core import CORESearcher
+from .sources.microsoft_academic import MicrosoftAcademicSearcher
 # from .academic_platforms.hub import SciHubSearcher
 
 # Initialize MCP server
@@ -29,35 +40,72 @@ mcp = FastMCP("academic_mcp")
 SAVE_PATH = os.getenv("ACADEMIC_MCP_DOWNLOAD_PATH", "./downloads")
 os.makedirs(SAVE_PATH, exist_ok=True)
 
-# Instances of searchers
-arxiv_searcher = ArxivSearcher()
-pubmed_searcher = PubMedSearcher()
-biorxiv_searcher = BioRxivSearcher()
-medrxiv_searcher = MedRxivSearcher()
-google_scholar_searcher = GoogleScholarSearcher()
-iacr_searcher = IACRSearcher()
-semantic_searcher = SemanticSearcher()
-crossref_searcher = CrossRefSearcher()
-# scihub_searcher = SciHubSearcher()
-
-engine2searcher: Dict[str, PaperSource] = {
-    "arxiv": arxiv_searcher,
-    "pubmed": pubmed_searcher,
-    "biorxiv": biorxiv_searcher,
-    "medrxiv": medrxiv_searcher,
-    "google_scholar": google_scholar_searcher,
-    "iacr": iacr_searcher,
-    "semantic": semantic_searcher,
-    "crossref": crossref_searcher,
-    # "scihub": scihub_searcher,
+# All available searchers
+ALL_SEARCHERS: Dict[str, PaperSource] = {
+    "arxiv": ArxivSearcher(),
+    "pubmed": PubMedSearcher(),
+    "pmc": PMCSearcher(),
+    "biorxiv": BioRxivSearcher(),
+    "medrxiv": MedRxivSearcher(),
+    "google_scholar": GoogleScholarSearcher(),
+    "iacr": IACRSearcher(),
+    "semantic": SemanticSearcher(),
+    "crossref": CrossRefSearcher(),
+    "sciencedirect": ScienceDirectSearcher(),
+    "springer": SpringerSearcher(),
+    "ieee": IEEESearcher(),
+    "scopus": ScopusSearcher(),
+    "acm": ACMSearcher(),
+    "wos": WOSSearcher(),
+    "jstor": JSTORSearcher(),
+    "researchgate": ResearchGateSearcher(),
+    "core": CORESearcher(),
+    "microsoft_academic": MicrosoftAcademicSearcher(),
+    # "scihub": SciHubSearcher(),
 }
+
+def get_enabled_searchers() -> Dict[str, PaperSource]:
+    """Get enabled searchers based on environment variables.
+
+    Environment variables:
+    - ACADEMIC_MCP_ENABLED_SOURCES: Comma-separated list of enabled sources (e.g., "arxiv,pubmed,pmc")
+    - ACADEMIC_MCP_DISABLED_SOURCES: Comma-separated list of disabled sources (e.g., "ieee,scopus")
+
+    If ENABLED_SOURCES is set, only those sources will be enabled.
+    If DISABLED_SOURCES is set, all sources except those will be enabled.
+    If both are set, ENABLED_SOURCES takes precedence.
+    If neither is set, all sources are enabled.
+    """
+    enabled_str = os.getenv("ACADEMIC_MCP_ENABLED_SOURCES", "").strip()
+    disabled_str = os.getenv("ACADEMIC_MCP_DISABLED_SOURCES", "").strip()
+
+    if enabled_str:
+        # Only enable specified sources
+        enabled_list = [s.strip().lower() for s in enabled_str.split(",") if s.strip()]
+        enabled_searchers = {k: v for k, v in ALL_SEARCHERS.items() if k in enabled_list}
+        logger.info(f"Enabled sources: {', '.join(enabled_searchers.keys())}")
+        return enabled_searchers
+    elif disabled_str:
+        # Disable specified sources
+        disabled_list = [s.strip().lower() for s in disabled_str.split(",") if s.strip()]
+        enabled_searchers = {k: v for k, v in ALL_SEARCHERS.items() if k not in disabled_list}
+        logger.info(f"Disabled sources: {', '.join(disabled_list)}")
+        logger.info(f"Enabled sources: {', '.join(enabled_searchers.keys())}")
+        return enabled_searchers
+    else:
+        # All sources enabled
+        logger.info(f"All sources enabled: {', '.join(ALL_SEARCHERS.keys())}")
+        return ALL_SEARCHERS.copy()
+
+# Get enabled searchers
+engine2searcher: Dict[str, PaperSource] = get_enabled_searchers()
 
 
 # region paper_search
 class PaperQuery(BaseModel):
-    searcher: Optional[Literal["arxiv", "pubmed", "biorxiv", "medrxiv", "google_scholar", "iacr", "semantic", "crossref"]] = Field(
+    searcher: Optional[str] = Field(
         default=None,
-        description="The academic platform to search from. None means searching from all available platforms.",
+        description=f"The academic platform to search from. Available sources: {', '.join(engine2searcher.keys())}. None means searching from all enabled platforms.",
     )
     query: str = Field(
         ...,
@@ -107,6 +155,11 @@ Additional search parameters:
     @model_validator(mode='after')
     def validate_searcher_specific_params(self) -> 'PaperQuery':
         """Validate that searcher-specific parameters are only used with appropriate searchers."""
+        # Validate searcher is in enabled list
+        if self.searcher is not None and self.searcher not in engine2searcher:
+            available = ', '.join(engine2searcher.keys())
+            raise ValueError(f"Searcher '{self.searcher}' is not available. Available sources: {available}")
+
         if self.year is not None and self.searcher not in [None, 'semantic']:
             raise ValueError("'year' parameter is only applicable when searcher is 'semantic' or None")
         if self.kwargs is not None and self.searcher not in [None, 'crossref']:
@@ -143,13 +196,13 @@ async def async_search_per_query(query: PaperQuery) -> List[Paper]:
     if not searcher:
         return []
     papers = []
-    if query.searcher == "iacr":
-        papers = iacr_searcher.search(query.query, query.max_results, query.fetch_details)
-    elif query.searcher == "semantic":
-        papers = semantic_searcher.search(query.query, query.year, query.max_results)
-    elif query.searcher == "crossref":
+    if query.searcher == "iacr" and "iacr" in engine2searcher:
+        papers = searcher.search(query.query, query.max_results, query.fetch_details)
+    elif query.searcher == "semantic" and "semantic" in engine2searcher:
+        papers = searcher.search(query.query, query.year, query.max_results)
+    elif query.searcher == "crossref" and "crossref" in engine2searcher:
         kwargs = query.kwargs if query.kwargs else {}
-        papers = crossref_searcher.search(query.query, query.max_results, **kwargs)
+        papers = searcher.search(query.query, query.max_results, **kwargs)
     else:
         papers = await async_search(searcher, query.query, query.max_results)
     return papers
@@ -163,9 +216,9 @@ async def async_search_per_query_list(query_list: List[PaperQuery]) -> List[Pape
 
 @mcp.tool(
     name="paper_search",
-    description="""Search academic papers from multiple sources.
+    description=f"""Search academic papers from multiple sources.
 
-## Available sources: arxiv, PubMed, bioRxiv, medRxiv, Google Scholar, IACR ePrint Archive, Semantic Scholar, CrossRef.
+## Available sources: {', '.join(engine2searcher.keys())}
 
 ## Input Constraints:
 - query: 1-500 characters, required, cannot be empty
@@ -173,7 +226,7 @@ async def async_search_per_query_list(query_list: List[PaperQuery]) -> List[Pape
 - year: Valid formats: '2019', '2016-2020', '2010-', '-2015' (only for semantic)
 - fetch_details: boolean (only for iacr)
 - kwargs: dict (only for crossref)
-
+""" + """
 ## Example:
 paper_search([
     {"searcher": "arxiv", "query": "machine learning", "max_results": 5},
@@ -206,8 +259,8 @@ async def paper_search(query_list: List[PaperQuery]) -> Dict[str, List[TextConte
 # region paper_download
 
 class PaperDownloadQuery(BaseModel):
-    searcher: Literal["arxiv", "pubmed", "biorxiv", "medrxiv", "google_scholar", "iacr", "semantic", "crossref"] = Field(
-        description="The academic platform to download from."
+    searcher: str = Field(
+        description=f"The academic platform to download from. Available sources: {', '.join(engine2searcher.keys())}"
     )
     paper_id: str = Field(
         ...,
@@ -222,6 +275,15 @@ class PaperDownloadQuery(BaseModel):
 - semantic: Semantic Scholar ID or prefixed ID (e.g., 'DOI:10.18653/v1/N18-3011', 'ARXIV:2106.15928')
 - crossref: DOI (e.g., '10.1038/s41586-020-2649-2')"""
     )
+
+    @field_validator('searcher')
+    @classmethod
+    def validate_searcher(cls, v: str) -> str:
+        """Validate searcher is enabled."""
+        if v not in engine2searcher:
+            available = ', '.join(engine2searcher.keys())
+            raise ValueError(f"Searcher '{v}' is not available. Available sources: {available}")
+        return v
 
     @field_validator('paper_id')
     @classmethod
@@ -292,10 +354,10 @@ async def paper_download(query_list: List[PaperDownloadQuery]) -> List[str]:
 # region paper_read
 @mcp.tool(
     name="paper_read",
-    description="""Read and extract text content from academic paper PDFs from multiple sources.
+    description=f"""Read and extract text content from academic paper PDFs from multiple sources.
 
 ## Input Constraints:
-- searcher: Required, must be one of: arxiv, pubmed, biorxiv, medrxiv, iacr, semantic, crossref
+- searcher: Required, must be one of: {', '.join(engine2searcher.keys())}
 - paper_id: Required, 1-200 characters, cannot be empty
 
 ## Example:
@@ -325,7 +387,10 @@ where paper_id: Semantic Scholar paper ID, Paper identifier in one of the follow
 paper_read({"searcher": "crossref", "paper_id": "10.1038/s41586-020-2649-2", "save_path": "./downloads"})  # paper_id is DOI.
 """)
 async def paper_read(
-    searcher: Literal["arxiv", "pubmed", "biorxiv", "medrxiv", "iacr", "semantic", "crossref"],
+    searcher: str = Field(
+        ...,
+        description=f"The academic platform to read from. Available sources: {', '.join(engine2searcher.keys())}"
+    ),
     paper_id: str = Field(
         ...,
         min_length=1,
@@ -334,6 +399,11 @@ async def paper_read(
     ),
 ) -> str:
     try:
+        # Validate searcher
+        if searcher not in engine2searcher:
+            available = ', '.join(engine2searcher.keys())
+            return f"Error: Searcher '{searcher}' is not available. Available sources: {available}"
+
         # Validate paper_id
         paper_id = paper_id.strip()
         if not paper_id:
