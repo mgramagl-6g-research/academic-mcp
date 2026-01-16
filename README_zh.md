@@ -550,9 +550,9 @@ paper_read(searcher="core", paper_id="123456789")
 
 **优先级规则：**
 - 如果两者都设置，`ACADEMIC_MCP_ENABLED_SOURCES` 优先
-- 如果两者都未设置，则默认启用所有 19 个数据源
+- 如果两者都未设置，则默认启用所有 18 个数据源
 
-**可用数据源名称（共 19 个）：**
+**可用数据源名称（共 18 个）：**
 
 | 数据源名称 | 类型 | API 密钥要求 | 描述 |
 |-----------|------|--------------|------|
@@ -566,7 +566,6 @@ paper_read(searcher="core", paper_id="123456789")
 | `semantic` | 免费 | `SEMANTIC_SCHOLAR_API_KEY`（可选）<br>[获取 API 密钥](https://www.semanticscholar.org/product/api) | Semantic Scholar AI 驱动搜索（使用 API 密钥可获得更高速率限制） |
 | `crossref` | 免费 | - | Crossref DOI 元数据 |
 | `core` | 免费 | `CORE_API_KEY`<br>[获取 API 密钥](https://core.ac.uk/services/api) | CORE 开放获取论文聚合器 |
-| `microsoft_academic` | 免费 | - | 微软学术图谱 |
 | `ieee` | 付费 | `IEEE_API_KEY`<br>[获取 API 密钥](https://developer.ieee.org/) | IEEE Xplore 数字图书馆 |
 | `scopus` | 付费 | `SCOPUS_API_KEY`<br>[获取 API 密钥](https://dev.elsevier.com/) | Elsevier Scopus 数据库 |
 | `springer` | 付费 | `SPRINGER_API_KEY`<br>[获取 API 密钥](https://dev.springernature.com/) | Springer 出版物 |

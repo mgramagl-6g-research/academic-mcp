@@ -550,9 +550,9 @@ Control which academic sources are available for searching and downloading:
 
 **Priority Rules:**
 - If both variables are set, `ACADEMIC_MCP_ENABLED_SOURCES` takes precedence
-- If neither is set, all 19 sources are enabled by default
+- If neither is set, all 18 sources are enabled by default
 
-**Available Source Names (19 total):**
+**Available Source Names (18 total):**
 
 | Source Name | Type | API Key Required | Description |
 |-------------|------|------------------|-------------|
@@ -566,7 +566,6 @@ Control which academic sources are available for searching and downloading:
 | `semantic` | Free | `SEMANTIC_SCHOLAR_API_KEY` (optional)<br>[Get API Key](https://www.semanticscholar.org/product/api) | Semantic Scholar AI-powered search (higher rate limits with API key) |
 | `crossref` | Free | - | Crossref DOI metadata |
 | `core` | Free | `CORE_API_KEY`<br>[Get API Key](https://core.ac.uk/services/api) | CORE aggregator of open access papers |
-| `microsoft_academic` | Free | - | Microsoft Academic Graph |
 | `ieee` | Premium | `IEEE_API_KEY`<br>[Get API Key](https://developer.ieee.org/) | IEEE Xplore digital library |
 | `scopus` | Premium | `SCOPUS_API_KEY`<br>[Get API Key](https://dev.elsevier.com/) | Elsevier Scopus database |
 | `springer` | Premium | `SPRINGER_API_KEY`<br>[Get API Key](https://dev.springernature.com/) | Springer publications |

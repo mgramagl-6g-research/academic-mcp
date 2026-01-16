@@ -31,7 +31,6 @@ from .sources.scopus import ScopusSearcher
 from .sources.jstor import JSTORSearcher
 from .sources.researchgate import ResearchGateSearcher
 from .sources.core import CORESearcher
-from .sources.microsoft_academic import MicrosoftAcademicSearcher
 # from .academic_platforms.hub import SciHubSearcher
 
 # Initialize MCP server
@@ -60,7 +59,6 @@ ALL_SEARCHERS: Dict[str, PaperSource] = {
     "jstor": JSTORSearcher(),
     "researchgate": ResearchGateSearcher(),
     "core": CORESearcher(),
-    "microsoft_academic": MicrosoftAcademicSearcher(),
     # "scihub": SciHubSearcher(),
 }
 
@@ -333,7 +331,7 @@ async def async_download_per_query(query: PaperDownloadQuery) -> str:
 
 ## Returns:
 List of paths to the downloaded PDF files.
-
+""" + """
 ## Example:
 paper_download([
     {"searcher": "arxiv", "paper_id": "2106.12345"},
@@ -359,7 +357,7 @@ async def paper_download(query_list: List[PaperDownloadQuery]) -> List[str]:
 ## Input Constraints:
 - searcher: Required, must be one of: {', '.join(engine2searcher.keys())}
 - paper_id: Required, 1-200 characters, cannot be empty
-
+""" + """
 ## Example:
 
 ### arXiv
