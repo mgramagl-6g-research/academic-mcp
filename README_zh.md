@@ -85,10 +85,10 @@
 pip install academic-mcp
 ```
 
-或使用 uv（推荐，安装更快）：
+启动 MCP 服务器：
 
 ```bash
-uv pip install academic-mcp
+academic-mcp
 ```
 
 ### 🔧 MCP 客户端配置
@@ -102,7 +102,7 @@ uv pip install academic-mcp
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
-**配置内容：**
+**配置：**
 ```json
 {
   "mcpServers": {
@@ -116,27 +116,8 @@ uv pip install academic-mcp
         "IEEE_API_KEY": "",
         "SCOPUS_API_KEY": "",
         "CORE_API_KEY": "",
-        "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
-      }
-    }
-  }
-}
-```
-
-**使用 uvx（替代方案）：**
-```json
-{
-  "mcpServers": {
-    "academic-mcp": {
-      "command": "uvx",
-      "args": ["academic-mcp"],
-      "env": {
-        "SEMANTIC_SCHOLAR_API_KEY": "",
-        "SCIENCEDIRECT_API_KEY": "",
-        "SPRINGER_API_KEY": "",
-        "IEEE_API_KEY": "",
-        "SCOPUS_API_KEY": "",
-        "CORE_API_KEY": "",
+        "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref,google_scholar,iacr",
+        "ACADEMIC_MCP_DISABLED_SOURCES": "ieee,scopus,springer,sciencedirect,wos,acm,jstor",
         "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
       }
     }
@@ -165,6 +146,8 @@ uv pip install academic-mcp
         "IEEE_API_KEY": "",
         "SCOPUS_API_KEY": "",
         "CORE_API_KEY": "",
+        "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref,google_scholar,iacr",
+        "ACADEMIC_MCP_DISABLED_SOURCES": "ieee,scopus,springer,sciencedirect,wos,acm,jstor",
         "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
       }
     }
@@ -207,6 +190,8 @@ claude mcp test academic-mcp
         "IEEE_API_KEY": "",
         "SCOPUS_API_KEY": "",
         "CORE_API_KEY": "",
+        "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref,google_scholar,iacr",
+        "ACADEMIC_MCP_DISABLED_SOURCES": "ieee,scopus,springer,sciencedirect,wos,acm,jstor",
         "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
       }
     }
@@ -231,6 +216,8 @@ claude mcp test academic-mcp
         "IEEE_API_KEY": "",
         "SCOPUS_API_KEY": "",
         "CORE_API_KEY": "",
+        "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref,google_scholar,iacr",
+        "ACADEMIC_MCP_DISABLED_SOURCES": "ieee,scopus,springer,sciencedirect,wos,acm,jstor",
         "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
       }
     }
@@ -262,6 +249,8 @@ claude mcp test academic-mcp
           "IEEE_API_KEY": "",
           "SCOPUS_API_KEY": "",
           "CORE_API_KEY": "",
+          "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref,google_scholar,iacr",
+          "ACADEMIC_MCP_DISABLED_SOURCES": "ieee,scopus,springer,sciencedirect,wos,acm,jstor",
           "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
         }
       }
@@ -298,132 +287,53 @@ python -m academic_mcp
 
 </details>
 
-### 📝 配置说明
+### ⚙️ 环境变量
 
-> **API 密钥：**
-> - 所有 API 密钥都是可选的 - 大多数数据源无需密钥即可使用
-> - API 密钥仅用于付费服务（Science Direct、Springer、IEEE、Scopus、Web of Science）
-> - 免费服务（arXiv、PubMed、PMC、bioRxiv 等）无需任何 API 密钥即可立即使用
-> - 从各提供商网站获取 API 密钥：
->   - Semantic Scholar: https://www.semanticscholar.org/product/api
->   - Elsevier (Science Direct/Scopus): https://dev.elsevier.com/
->   - Springer Nature: https://dev.springernature.com/
->   - IEEE: https://developer.ieee.org/
->   - CORE: https://core.ac.uk/services/api
->
-> **下载路径：**
-> - 建议使用绝对路径设置 `ACADEMIC_MCP_DOWNLOAD_PATH` 以避免混淆
-> - 确保目录存在，或服务器将自动创建
-> - 示例：`/Users/yourusername/Documents/papers` 或 `C:\Users\yourusername\papers`
->
-> **Python 环境：**
-> - 确保 `python` 命令指向 Python 3.10+
-> - 对于虚拟环境，使用完整路径：`/path/to/venv/bin/python`
-> - 对于 conda：`/path/to/conda/envs/yourenv/bin/python`
+**API 密钥**（可选 - 仅用于付费服务）：
+- `SEMANTIC_SCHOLAR_API_KEY`: Semantic Scholar（[获取 API 密钥](https://www.semanticscholar.org/product/api)）
+- `SCIENCEDIRECT_API_KEY`: Elsevier Science Direct（[获取 API 密钥](https://dev.elsevier.com/)）
+- `SPRINGER_API_KEY`: Springer Nature（[获取 API 密钥](https://dev.springernature.com/)）
+- `IEEE_API_KEY`: IEEE Xplore（[获取 API 密钥](https://developer.ieee.org/)）
+- `SCOPUS_API_KEY`: Elsevier Scopus（[获取 API 密钥](https://dev.elsevier.com/)）
+- `CORE_API_KEY`: CORE 聚合器（[获取 API 密钥](https://core.ac.uk/services/api)）
+- `WOS_API_KEY`: Web of Science（需要机构订阅）
 
-### 🎛️ 数据源控制示例
+**通用设置：**
+- `ACADEMIC_MCP_DOWNLOAD_PATH`: 下载 PDF 的目录（默认：`./downloads`）
 
-您可以使用环境变量控制启动时启用哪些学术数据源：
+**数据源控制：**
+- `ACADEMIC_MCP_ENABLED_SOURCES`: 要启用的数据源的逗号分隔列表（白名单）
+- `ACADEMIC_MCP_DISABLED_SOURCES`: 要禁用的数据源的逗号分隔列表（黑名单）
+- 如果两者都设置，`ACADEMIC_MCP_ENABLED_SOURCES` 优先
+- 如果两者都未设置，则默认启用所有 18 个数据源
 
-**示例 1：仅启用免费数据源**
-```json
-{
-  "mcpServers": {
-    "academic-mcp": {
-      "command": "python",
-      "args": ["-m", "academic_mcp"],
-      "env": {
-        "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref",
-        "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
-      }
-    }
-  }
-}
-```
+**可用数据源名称（共 18 个）：**
 
-**示例 2：禁用付费/订阅服务**
-```json
-{
-  "mcpServers": {
-    "academic-mcp": {
-      "command": "python",
-      "args": ["-m", "academic_mcp"],
-      "env": {
-        "ACADEMIC_MCP_DISABLED_SOURCES": "ieee,scopus,springer,sciencedirect,wos,acm,jstor,researchgate",
-        "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
-      }
-    }
-  }
-}
-```
+| 数据源名称 | 类型 | API 密钥要求 | 描述 |
+|-----------|------|--------------|------|
+| `arxiv` | 免费 | - | 物理、数学、计算机科学预印本库 |
+| `pubmed` | 免费 | - | 来自 MEDLINE 的生物医学文献 |
+| `pmc` | 免费 | - | PubMed Central 全文存档 |
+| `biorxiv` | 免费 | - | 生物学预印本服务器 |
+| `medrxiv` | 免费 | - | 健康科学预印本服务器 |
+| `google_scholar` | 免费 | - | Google Scholar 搜索 |
+| `iacr` | 免费 | - | 国际密码学研究协会 |
+| `semantic` | 免费 | `SEMANTIC_SCHOLAR_API_KEY`（可选）<br>[获取 API 密钥](https://www.semanticscholar.org/product/api) | Semantic Scholar AI 驱动搜索（使用 API 密钥可获得更高速率限制） |
+| `crossref` | 免费 | - | Crossref DOI 元数据 |
+| `core` | 免费 | `CORE_API_KEY`<br>[获取 API 密钥](https://core.ac.uk/services/api) | CORE 开放获取论文聚合器 |
+| `ieee` | 付费 | `IEEE_API_KEY`<br>[获取 API 密钥](https://developer.ieee.org/) | IEEE Xplore 数字图书馆 |
+| `scopus` | 付费 | `SCOPUS_API_KEY`<br>[获取 API 密钥](https://dev.elsevier.com/) | Elsevier Scopus 数据库 |
+| `springer` | 付费 | `SPRINGER_API_KEY`<br>[获取 API 密钥](https://dev.springernature.com/) | Springer 出版物 |
+| `sciencedirect` | 付费 | `SCIENCEDIRECT_API_KEY`<br>[获取 API 密钥](https://dev.elsevier.com/) | Elsevier ScienceDirect |
+| `wos` | 付费 | `WOS_API_KEY`<br>[机构访问](https://clarivate.com/webofsciencegroup/solutions/web-of-science/) | Web of Science（需要机构订阅） |
+| `acm` | 付费 | - | ACM 数字图书馆 |
+| `jstor` | 付费 | - | JSTOR 存档 |
+| `researchgate` | 免费 | - | ResearchGate 社交网络 |
 
-**示例 3：仅启用生物/医学数据源**
-```json
-{
-  "mcpServers": {
-    "academic-mcp": {
-      "command": "python",
-      "args": ["-m", "academic_mcp"],
-      "env": {
-        "ACADEMIC_MCP_ENABLED_SOURCES": "pubmed,pmc,biorxiv,medrxiv",
-        "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
-      }
-    }
-  }
-}
-```
-
-**示例 4：仅启用计算机科学数据源**
-```json
-{
-  "mcpServers": {
-    "academic-mcp": {
-      "command": "python",
-      "args": ["-m", "academic_mcp"],
-      "env": {
-        "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,semantic,ieee,acm",
-        "IEEE_API_KEY": "your-ieee-key-here",
-        "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
-      }
-    }
-  }
-}
-```
-
-### 🛠️ 开发环境
-
-对于想要修改代码或贡献的开发者：
-
-1. **设置环境**：
-
-   ```bash
-   # 如果未安装 uv，请先安装
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-
-   # 克隆仓库
-   git clone https://github.com/LinXueyuanStdio/academic-mcp.git
-   cd academic-mcp
-
-   # 创建并激活虚拟环境
-   uv venv
-   source .venv/bin/activate  # Windows: .venv\Scripts\activate
-   ```
-
-2. **安装依赖**：
-
-   ```bash
-   # 安装依赖（推荐）
-   uv pip install -e .
-
-   # 添加开发依赖（可选）
-   uv pip install pytest flake8
-   ```
-
----
 
 ## 🚀 使用
 
-配置完成后，`academic-mcp` 通过 Claude Desktop 或任何兼容 MCP 的客户端提供三个主要工具：
+配置完成后，`academic-mcp` 通过 Claude Desktop 或任何兼容 MCP 的客户端提供三个主要工具。
 
 ### 1. 搜索论文 (`paper_search`)
 
@@ -520,84 +430,36 @@ paper_read(searcher="semantic", paper_id="DOI:10.18653/v1/N18-3011")
 paper_read(searcher="core", paper_id="123456789")
 ```
 
-### ⚙️ 环境变量
+---
 
-**可选 API 密钥**（用于增强功能）：
-- `SEMANTIC_SCHOLAR_API_KEY`: Semantic Scholar API 密钥，用于更高的速率限制
-- `SCIENCEDIRECT_API_KEY`: Elsevier API 密钥，用于 Science Direct 访问
-- `SPRINGER_API_KEY`: Springer Nature API 密钥，用于 Springer Link 访问
-- `IEEE_API_KEY`: IEEE API 密钥，用于 IEEE Xplore 访问
-- `SCOPUS_API_KEY`: Elsevier API 密钥，用于 Scopus 访问
-- `CORE_API_KEY`: CORE API 密钥，用于开放获取论文
-- `WOS_API_KEY`: Web of Science API 密钥（需要机构订阅）
+### 🛠️ 开发环境
 
-**通用设置：**
-- `ACADEMIC_MCP_DOWNLOAD_PATH`: 下载 PDF 的目录（默认：`./downloads`）
+对于想要修改代码或贡献的开发者：
 
-**数据源控制（启用/禁用数据源）：**
+1. **设置环境**：
 
-控制哪些学术数据源可用于搜索和下载：
+   ```bash
+   # 如果未安装 uv，请先安装
+   curl -LsSf https://astral.sh/uv/install.sh | sh
 
-- **`ACADEMIC_MCP_ENABLED_SOURCES`**: 要启用的数据源的逗号分隔列表
-  - **行为**: 如果设置，则仅启用指定的数据源（白名单模式）
-  - **示例**: `"arxiv,pubmed,pmc,semantic,core"` 仅启用免费数据源
-  - **使用场景**: 限制为您需要或有权访问的特定平台
+   # 克隆仓库
+   git clone https://github.com/LinXueyuanStdio/academic-mcp.git
+   cd academic-mcp
 
-- **`ACADEMIC_MCP_DISABLED_SOURCES`**: 要禁用的数据源的逗号分隔列表
-  - **行为**: 如果设置，则启用除指定数据源之外的所有数据源（黑名单模式）
-  - **示例**: `"ieee,scopus,springer,sciencedirect,wos,acm,jstor,researchgate"` 禁用付费数据源
-  - **使用场景**: 排除需要订阅或有速率限制的平台
+   # 创建并激活虚拟环境
+   uv venv
+   source .venv/bin/activate  # Windows: .venv\Scripts\activate
+   ```
 
-**优先级规则：**
-- 如果两者都设置，`ACADEMIC_MCP_ENABLED_SOURCES` 优先
-- 如果两者都未设置，则默认启用所有 18 个数据源
+2. **安装依赖**：
 
-**可用数据源名称（共 18 个）：**
+   ```bash
+   # 安装依赖（推荐）
+   uv pip install -e .
 
-| 数据源名称 | 类型 | API 密钥要求 | 描述 |
-|-----------|------|--------------|------|
-| `arxiv` | 免费 | - | 物理、数学、计算机科学预印本库 |
-| `pubmed` | 免费 | - | 来自 MEDLINE 的生物医学文献 |
-| `pmc` | 免费 | - | PubMed Central 全文存档 |
-| `biorxiv` | 免费 | - | 生物学预印本服务器 |
-| `medrxiv` | 免费 | - | 健康科学预印本服务器 |
-| `google_scholar` | 免费 | - | Google Scholar 搜索 |
-| `iacr` | 免费 | - | 国际密码学研究协会 |
-| `semantic` | 免费 | `SEMANTIC_SCHOLAR_API_KEY`（可选）<br>[获取 API 密钥](https://www.semanticscholar.org/product/api) | Semantic Scholar AI 驱动搜索（使用 API 密钥可获得更高速率限制） |
-| `crossref` | 免费 | - | Crossref DOI 元数据 |
-| `core` | 免费 | `CORE_API_KEY`<br>[获取 API 密钥](https://core.ac.uk/services/api) | CORE 开放获取论文聚合器 |
-| `ieee` | 付费 | `IEEE_API_KEY`<br>[获取 API 密钥](https://developer.ieee.org/) | IEEE Xplore 数字图书馆 |
-| `scopus` | 付费 | `SCOPUS_API_KEY`<br>[获取 API 密钥](https://dev.elsevier.com/) | Elsevier Scopus 数据库 |
-| `springer` | 付费 | `SPRINGER_API_KEY`<br>[获取 API 密钥](https://dev.springernature.com/) | Springer 出版物 |
-| `sciencedirect` | 付费 | `SCIENCEDIRECT_API_KEY`<br>[获取 API 密钥](https://dev.elsevier.com/) | Elsevier ScienceDirect |
-| `wos` | 付费 | `WOS_API_KEY`<br>[机构访问](https://clarivate.com/webofsciencegroup/solutions/web-of-science/) | Web of Science（需要机构订阅） |
-| `acm` | 付费 | - | ACM 数字图书馆 |
-| `jstor` | 付费 | - | JSTOR 存档 |
-| `researchgate` | 免费 | - | ResearchGate 社交网络 |
-
-**说明：**
-- **免费数据源** 无需任何 API 密钥即可使用
-- **付费数据源** 可能需要机构访问权限或 API 密钥才能获得完整功能
-- 标记为 **（可选）** 的 API 密钥表示可以在没有密钥的情况下使用，但速率限制较低
-- 标记为 "-" 的数据源不需要或不支持 API 密钥
-
-**常见使用场景：**
-
-```bash
-# 仅启用开放获取数据源
-export ACADEMIC_MCP_ENABLED_SOURCES="arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref"
-
-# 禁用需要订阅的付费数据源
-export ACADEMIC_MCP_DISABLED_SOURCES="ieee,scopus,springer,sciencedirect,wos,acm,jstor"
-
-# 仅启用生物医学数据源
-export ACADEMIC_MCP_ENABLED_SOURCES="pubmed,pmc,biorxiv,medrxiv"
-
-# 仅启用计算机科学数据源
-export ACADEMIC_MCP_ENABLED_SOURCES="arxiv,semantic,ieee,acm"
-```
-
-**注意：** 大多数数据源无需 API 密钥即可工作。API 密钥仅用于特定付费服务或更高的速率限制。
+   # 添加开发依赖（可选）
+   uv pip install pytest flake8
+   ```
 
 ---
 

@@ -85,10 +85,10 @@ Install the package:
 pip install academic-mcp
 ```
 
-Or using uv (recommended for faster installation):
+Start the MCP server:
 
 ```bash
-uv pip install academic-mcp
+academic-mcp
 ```
 
 ### 🔧 MCP Client Configuration
@@ -116,27 +116,8 @@ Choose your MCP client and follow the configuration steps:
         "IEEE_API_KEY": "",
         "SCOPUS_API_KEY": "",
         "CORE_API_KEY": "",
-        "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
-      }
-    }
-  }
-}
-```
-
-**Using with uvx (alternative):**
-```json
-{
-  "mcpServers": {
-    "academic-mcp": {
-      "command": "uvx",
-      "args": ["academic-mcp"],
-      "env": {
-        "SEMANTIC_SCHOLAR_API_KEY": "",
-        "SCIENCEDIRECT_API_KEY": "",
-        "SPRINGER_API_KEY": "",
-        "IEEE_API_KEY": "",
-        "SCOPUS_API_KEY": "",
-        "CORE_API_KEY": "",
+        "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref,google_scholar,iacr",
+        "ACADEMIC_MCP_DISABLED_SOURCES": "ieee,scopus,springer,sciencedirect,wos,acm,jstor",
         "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
       }
     }
@@ -165,6 +146,8 @@ Choose your MCP client and follow the configuration steps:
         "IEEE_API_KEY": "",
         "SCOPUS_API_KEY": "",
         "CORE_API_KEY": "",
+        "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref,google_scholar,iacr",
+        "ACADEMIC_MCP_DISABLED_SOURCES": "ieee,scopus,springer,sciencedirect,wos,acm,jstor",
         "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
       }
     }
@@ -207,6 +190,8 @@ claude mcp test academic-mcp
         "IEEE_API_KEY": "",
         "SCOPUS_API_KEY": "",
         "CORE_API_KEY": "",
+        "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref,google_scholar,iacr",
+        "ACADEMIC_MCP_DISABLED_SOURCES": "ieee,scopus,springer,sciencedirect,wos,acm,jstor",
         "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
       }
     }
@@ -231,6 +216,8 @@ Edit `~/.config/Code/User/settings.json` (Linux/macOS) or `%APPDATA%\Code\User\s
         "IEEE_API_KEY": "",
         "SCOPUS_API_KEY": "",
         "CORE_API_KEY": "",
+        "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref,google_scholar,iacr",
+        "ACADEMIC_MCP_DISABLED_SOURCES": "ieee,scopus,springer,sciencedirect,wos,acm,jstor",
         "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
       }
     }
@@ -262,6 +249,8 @@ Edit `~/.config/Code/User/settings.json` (Linux/macOS) or `%APPDATA%\Code\User\s
           "IEEE_API_KEY": "",
           "SCOPUS_API_KEY": "",
           "CORE_API_KEY": "",
+          "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref,google_scholar,iacr",
+          "ACADEMIC_MCP_DISABLED_SOURCES": "ieee,scopus,springer,sciencedirect,wos,acm,jstor",
           "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
         }
       }
@@ -298,132 +287,53 @@ python -m academic_mcp
 
 </details>
 
-### 📝 Configuration Notes
+### ⚙️ Environment Variables
 
-> **API Keys:**
-> - All API keys are optional - most sources work without them
-> - API keys only needed for premium services (Science Direct, Springer, IEEE, Scopus, Web of Science)
-> - Free services (arXiv, PubMed, PMC, bioRxiv, etc.) work immediately without any API keys
-> - Get API keys from respective provider websites:
->   - Semantic Scholar: https://www.semanticscholar.org/product/api
->   - Elsevier (Science Direct/Scopus): https://dev.elsevier.com/
->   - Springer Nature: https://dev.springernature.com/
->   - IEEE: https://developer.ieee.org/
->   - CORE: https://core.ac.uk/services/api
->
-> **Download Path:**
-> - Use absolute paths for `ACADEMIC_MCP_DOWNLOAD_PATH` to avoid confusion
-> - Ensure the directory exists or the server will create it
-> - Example: `/Users/yourusername/Documents/papers` or `C:\Users\yourusername\papers`
->
-> **Python Environment:**
-> - Ensure `python` command points to Python 3.10+
-> - For virtual environments, use the full path: `/path/to/venv/bin/python`
-> - For conda: `/path/to/conda/envs/yourenv/bin/python`
+**API Keys** (optional - only for premium services):
+- `SEMANTIC_SCHOLAR_API_KEY`: Semantic Scholar ([Get API Key](https://www.semanticscholar.org/product/api))
+- `SCIENCEDIRECT_API_KEY`: Elsevier Science Direct ([Get API Key](https://dev.elsevier.com/))
+- `SPRINGER_API_KEY`: Springer Nature ([Get API Key](https://dev.springernature.com/))
+- `IEEE_API_KEY`: IEEE Xplore ([Get API Key](https://developer.ieee.org/))
+- `SCOPUS_API_KEY`: Elsevier Scopus ([Get API Key](https://dev.elsevier.com/))
+- `CORE_API_KEY`: CORE aggregator ([Get API Key](https://core.ac.uk/services/api))
+- `WOS_API_KEY`: Web of Science (requires institutional subscription)
 
-### 🎛️ Source Control Examples
+**General Settings:**
+- `ACADEMIC_MCP_DOWNLOAD_PATH`: Directory for downloaded PDFs (default: `./downloads`)
 
-You can control which academic sources are enabled at startup using environment variables:
+**Source Control:**
+- `ACADEMIC_MCP_ENABLED_SOURCES`: Comma-separated list to enable specific sources (whitelist)
+- `ACADEMIC_MCP_DISABLED_SOURCES`: Comma-separated list to disable specific sources (blacklist)
+- If both are set, `ACADEMIC_MCP_ENABLED_SOURCES` takes precedence
+- If neither is set, all 18 sources are enabled by default
 
-**Example 1: Enable Only Free Sources**
-```json
-{
-  "mcpServers": {
-    "academic-mcp": {
-      "command": "python",
-      "args": ["-m", "academic_mcp"],
-      "env": {
-        "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref",
-        "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
-      }
-    }
-  }
-}
-```
+**Available Source Names (18 total):**
 
-**Example 2: Disable Premium/Subscription Services**
-```json
-{
-  "mcpServers": {
-    "academic-mcp": {
-      "command": "python",
-      "args": ["-m", "academic_mcp"],
-      "env": {
-        "ACADEMIC_MCP_DISABLED_SOURCES": "ieee,scopus,springer,sciencedirect,wos,acm,jstor,researchgate",
-        "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
-      }
-    }
-  }
-}
-```
+| Source Name | Type | API Key Required | Description |
+|-------------|------|------------------|-------------|
+| `arxiv` | Free | - | Preprint repository for physics, mathematics, computer science |
+| `pubmed` | Free | - | Biomedical literature from MEDLINE |
+| `pmc` | Free | - | PubMed Central full-text archive |
+| `biorxiv` | Free | - | Preprint server for biology |
+| `medrxiv` | Free | - | Preprint server for health sciences |
+| `google_scholar` | Free | - | Google Scholar search |
+| `iacr` | Free | - | International Association for Cryptologic Research |
+| `semantic` | Free | `SEMANTIC_SCHOLAR_API_KEY` (optional)<br>[Get API Key](https://www.semanticscholar.org/product/api) | Semantic Scholar AI-powered search (higher rate limits with API key) |
+| `crossref` | Free | - | Crossref DOI metadata |
+| `core` | Free | `CORE_API_KEY`<br>[Get API Key](https://core.ac.uk/services/api) | CORE aggregator of open access papers |
+| `ieee` | Premium | `IEEE_API_KEY`<br>[Get API Key](https://developer.ieee.org/) | IEEE Xplore digital library |
+| `scopus` | Premium | `SCOPUS_API_KEY`<br>[Get API Key](https://dev.elsevier.com/) | Elsevier Scopus database |
+| `springer` | Premium | `SPRINGER_API_KEY`<br>[Get API Key](https://dev.springernature.com/) | Springer publications |
+| `sciencedirect` | Premium | `SCIENCEDIRECT_API_KEY`<br>[Get API Key](https://dev.elsevier.com/) | Elsevier ScienceDirect |
+| `wos` | Premium | `WOS_API_KEY`<br>[Institutional Access](https://clarivate.com/webofsciencegroup/solutions/web-of-science/) | Web of Science (requires institutional subscription) |
+| `acm` | Premium | - | ACM Digital Library |
+| `jstor` | Premium | - | JSTOR archive |
+| `researchgate` | Free | - | ResearchGate social network |
 
-**Example 3: Enable Only Biology/Medicine Sources**
-```json
-{
-  "mcpServers": {
-    "academic-mcp": {
-      "command": "python",
-      "args": ["-m", "academic_mcp"],
-      "env": {
-        "ACADEMIC_MCP_ENABLED_SOURCES": "pubmed,pmc,biorxiv,medrxiv",
-        "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
-      }
-    }
-  }
-}
-```
-
-**Example 4: Enable Only Computer Science Sources**
-```json
-{
-  "mcpServers": {
-    "academic-mcp": {
-      "command": "python",
-      "args": ["-m", "academic_mcp"],
-      "env": {
-        "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,semantic,ieee,acm",
-        "IEEE_API_KEY": "your-ieee-key-here",
-        "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
-      }
-    }
-  }
-}
-```
-
-### 🛠️ For Development
-
-For developers who want to modify the code or contribute:
-
-1. **Setup Environment**:
-
-   ```bash
-   # Install uv if not installed
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-
-   # Clone repository
-   git clone https://github.com/LinXueyuanStdio/academic-mcp.git
-   cd academic-mcp
-
-   # Create and activate virtual environment
-   uv venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-
-2. **Install Dependencies**:
-
-   ```bash
-   # Install dependencies (recommended)
-   uv pip install -e .
-
-   # Add development dependencies (optional)
-   uv pip install pytest flake8
-   ```
-
----
 
 ## 🚀 Usage
 
-Once configured, `academic-mcp` provides three main tools accessible through Claude Desktop or any MCP-compatible client:
+Once configured, `academic-mcp` provides three main tools accessible through Claude Desktop or any MCP-compatible client.
 
 ### 1. Search Papers (`paper_search`)
 
@@ -520,84 +430,36 @@ paper_read(searcher="semantic", paper_id="DOI:10.18653/v1/N18-3011")
 paper_read(searcher="core", paper_id="123456789")
 ```
 
-### ⚙️ Environment Variables
+---
 
-**Optional API Keys** (for enhanced features):
-- `SEMANTIC_SCHOLAR_API_KEY`: Semantic Scholar API key for higher rate limits
-- `SCIENCEDIRECT_API_KEY`: Elsevier API key for Science Direct access
-- `SPRINGER_API_KEY`: Springer Nature API key for Springer Link access
-- `IEEE_API_KEY`: IEEE API key for IEEE Xplore access
-- `SCOPUS_API_KEY`: Elsevier API key for Scopus access
-- `CORE_API_KEY`: CORE API key for open access papers
-- `WOS_API_KEY`: Web of Science API key (requires institutional subscription)
+### 🛠️ For Development
 
-**General Settings:**
-- `ACADEMIC_MCP_DOWNLOAD_PATH`: Directory for downloaded PDFs (default: `./downloads`)
+For developers who want to modify the code or contribute:
 
-**Source Control (Enable/Disable Sources):**
+1. **Setup Environment**:
 
-Control which academic sources are available for searching and downloading:
+   ```bash
+   # Install uv if not installed
+   curl -LsSf https://astral.sh/uv/install.sh | sh
 
-- **`ACADEMIC_MCP_ENABLED_SOURCES`**: Comma-separated list of sources to enable
-  - **Behavior**: If set, ONLY the specified sources will be enabled (whitelist mode)
-  - **Example**: `"arxiv,pubmed,pmc,semantic,core"` enables only free sources
-  - **Use case**: Restrict to specific platforms you need or have access to
+   # Clone repository
+   git clone https://github.com/LinXueyuanStdio/academic-mcp.git
+   cd academic-mcp
 
-- **`ACADEMIC_MCP_DISABLED_SOURCES`**: Comma-separated list of sources to disable
-  - **Behavior**: If set, all sources EXCEPT the specified ones will be enabled (blacklist mode)
-  - **Example**: `"ieee,scopus,springer,sciencedirect,wos,acm,jstor,researchgate"` disables premium sources
-  - **Use case**: Exclude platforms that require subscriptions or have rate limits
+   # Create and activate virtual environment
+   uv venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
 
-**Priority Rules:**
-- If both variables are set, `ACADEMIC_MCP_ENABLED_SOURCES` takes precedence
-- If neither is set, all 18 sources are enabled by default
+2. **Install Dependencies**:
 
-**Available Source Names (18 total):**
+   ```bash
+   # Install dependencies (recommended)
+   uv pip install -e .
 
-| Source Name | Type | API Key Required | Description |
-|-------------|------|------------------|-------------|
-| `arxiv` | Free | - | Preprint repository for physics, mathematics, computer science |
-| `pubmed` | Free | - | Biomedical literature from MEDLINE |
-| `pmc` | Free | - | PubMed Central full-text archive |
-| `biorxiv` | Free | - | Preprint server for biology |
-| `medrxiv` | Free | - | Preprint server for health sciences |
-| `google_scholar` | Free | - | Google Scholar search |
-| `iacr` | Free | - | International Association for Cryptologic Research |
-| `semantic` | Free | `SEMANTIC_SCHOLAR_API_KEY` (optional)<br>[Get API Key](https://www.semanticscholar.org/product/api) | Semantic Scholar AI-powered search (higher rate limits with API key) |
-| `crossref` | Free | - | Crossref DOI metadata |
-| `core` | Free | `CORE_API_KEY`<br>[Get API Key](https://core.ac.uk/services/api) | CORE aggregator of open access papers |
-| `ieee` | Premium | `IEEE_API_KEY`<br>[Get API Key](https://developer.ieee.org/) | IEEE Xplore digital library |
-| `scopus` | Premium | `SCOPUS_API_KEY`<br>[Get API Key](https://dev.elsevier.com/) | Elsevier Scopus database |
-| `springer` | Premium | `SPRINGER_API_KEY`<br>[Get API Key](https://dev.springernature.com/) | Springer publications |
-| `sciencedirect` | Premium | `SCIENCEDIRECT_API_KEY`<br>[Get API Key](https://dev.elsevier.com/) | Elsevier ScienceDirect |
-| `wos` | Premium | `WOS_API_KEY`<br>[Institutional Access](https://clarivate.com/webofsciencegroup/solutions/web-of-science/) | Web of Science (requires institutional subscription) |
-| `acm` | Premium | - | ACM Digital Library |
-| `jstor` | Premium | - | JSTOR archive |
-| `researchgate` | Free | - | ResearchGate social network |
-
-**Notes:**
-- **Free sources** work without any API keys
-- **Premium sources** may require institutional access or API keys for full functionality
-- API keys with **(optional)** can work without keys but with lower rate limits
-- Sources marked with "-" do not require or support API keys
-
-**Common Use Cases:**
-
-```bash
-# Enable only open access sources
-export ACADEMIC_MCP_ENABLED_SOURCES="arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref"
-
-# Disable premium sources requiring subscriptions
-export ACADEMIC_MCP_DISABLED_SOURCES="ieee,scopus,springer,sciencedirect,wos,acm,jstor"
-
-# Enable only biomedical sources
-export ACADEMIC_MCP_ENABLED_SOURCES="pubmed,pmc,biorxiv,medrxiv"
-
-# Enable only computer science sources
-export ACADEMIC_MCP_ENABLED_SOURCES="arxiv,semantic,ieee,acm"
-```
-
-**Note:** Most sources work without API keys. API keys are only needed for specific premium services or higher rate limits.
+   # Add development dependencies (optional)
+   uv pip install pytest flake8
+   ```
 
 ---
 
