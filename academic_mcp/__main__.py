@@ -31,6 +31,8 @@ from .sources.scopus import ScopusSearcher
 from .sources.jstor import JSTORSearcher
 from .sources.researchgate import ResearchGateSearcher
 from .sources.core import CORESearcher
+from .sources.openalex import OpenAlexSearcher
+from .sources.unpaywall import UnpaywallSearcher
 # from .academic_platforms.hub import SciHubSearcher
 
 # Initialize MCP server
@@ -59,6 +61,8 @@ ALL_SEARCHERS: Dict[str, PaperSource] = {
     "jstor": JSTORSearcher(),
     "researchgate": ResearchGateSearcher(),
     "core": CORESearcher(),
+    "openalex": OpenAlexSearcher(),
+    "unpaywall": UnpaywallSearcher(),
     # "scihub": SciHubSearcher(),
 }
 
@@ -219,7 +223,7 @@ async def async_search_per_query_list(query_list: List[PaperQuery]) -> List[Pape
 ## Available sources: {', '.join(engine2searcher.keys())}
 
 ## Input Constraints:
-- query: 1-500 characters, required, cannot be empty
+- query: 1-500 characters, required, cannot be empty. For 'wos', you can use strict field tags like TI=(Title) or AU=(Author). If no tag is provided, it defaults to TS=(Topic Search).
 - max_results: 1-100, default is 10
 - year: Valid formats: '2019', '2016-2020', '2010-', '-2015' (only for semantic)
 - fetch_details: boolean (only for iacr)
@@ -271,7 +275,9 @@ class PaperDownloadQuery(BaseModel):
 - medrxiv: medRxiv DOI (e.g., '10.1101/2020.01.01.123456')
 - iacr: IACR paper ID (e.g., '2009/101')
 - semantic: Semantic Scholar ID or prefixed ID (e.g., 'DOI:10.18653/v1/N18-3011', 'ARXIV:2106.15928')
-- crossref: DOI (e.g., '10.1038/s41586-020-2649-2')"""
+- crossref: DOI (e.g., '10.1038/s41586-020-2649-2')
+- openalex: OpenAlex ID (e.g., 'W2741809807')
+- unpaywall: DOI (e.g., '10.1038/nature12373')"""
     )
 
     @field_validator('searcher')
@@ -328,6 +334,8 @@ async def async_download_per_query(query: PaperDownloadQuery) -> str:
     - PMID:<id> (e.g., "PMID:19872477")
     - PMCID:<id> (e.g., "PMCID:2323736")
     - URL:<url> (e.g., "URL:https://arxiv.org/abs/2106.15928v1")
+- OpenAlex: Use the OpenAlex Work ID (e.g., "W2741809807").
+- Unpaywall: Use the DOI (e.g., "10.1038/nature12373").
 
 ## Returns:
 List of paths to the downloaded PDF files.
@@ -337,7 +345,8 @@ paper_download([
     {"searcher": "arxiv", "paper_id": "2106.12345"},
     {"searcher": "pubmed", "paper_id": "32790614"},
     {"searcher": "biorxiv", "paper_id": "10.1101/2020.01.01.123456"},
-    {"searcher": "semantic", "paper_id": "DOI:10.18653/v1/N18-3011"}
+    {"searcher": "semantic", "paper_id": "DOI:10.18653/v1/N18-3011"},
+    {"searcher": "unpaywall", "paper_id": "10.1038/nature12373"}
 ])
 """,
 )
@@ -383,6 +392,10 @@ where paper_id: Semantic Scholar paper ID, Paper identifier in one of the follow
     - URL:<url> (e.g., "URL:https://arxiv.org/abs/2106.15928v1")
 ### CrossRef
 paper_read({"searcher": "crossref", "paper_id": "10.1038/s41586-020-2649-2", "save_path": "./downloads"})  # paper_id is DOI.
+### OpenAlex
+paper_read({"searcher": "openalex", "paper_id": "W2741809807", "save_path": "./downloads"})  # paper_id is OpenAlex ID.
+### Unpaywall
+paper_read({"searcher": "unpaywall", "paper_id": "10.1038/nature12373", "save_path": "./downloads"})  # paper_id is DOI.
 """)
 async def paper_read(
     searcher: str = Field(
@@ -411,7 +424,16 @@ async def paper_read(
         if not searcher_instance:
             return f"Searcher '{searcher}' not found or not supported."
         text = searcher_instance.read_paper(paper_id, SAVE_PATH)
-        return text
+        
+        # Truncate to prevent excessively large payloads and wrap in XML for prompt injection mitigation
+        MAX_TEXT_LENGTH = 100000
+        if len(text) > MAX_TEXT_LENGTH:
+            text = text[:MAX_TEXT_LENGTH] + "\n...[TRUNCATED due to length constraints]..."
+            
+        xml_wrapped_text = f'''<untrusted_paper_content source="{searcher}" paper_id="{paper_id}">
+{text}
+</untrusted_paper_content>'''
+        return xml_wrapped_text
     except Exception as e:
         logger.error(f"Error converting paper to text: {e}\n{traceback.format_exc()}")
         return f"Error converting paper to text: {e}"
