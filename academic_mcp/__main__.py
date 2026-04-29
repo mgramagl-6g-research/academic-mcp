@@ -26,7 +26,7 @@ from .sources.sciencedirect import ScienceDirectSearcher
 from .sources.springer import SpringerSearcher
 from .sources.ieee import IEEESearcher
 from .sources.acm import ACMSearcher
-from .sources.wos import WOSSearcher
+from .sources.wos import WOSSearcher, WOSReference
 from .sources.scopus import ScopusSearcher
 from .sources.jstor import JSTORSearcher
 from .sources.researchgate import ResearchGateSearcher
@@ -440,6 +440,211 @@ async def paper_read(
 
 # endregion paper_read
 
+
+# region wos_citation_tools
+
+@mcp.tool(
+    name="wos_citing_articles",
+    description="""Find articles that cite a given Web of Science paper.
+
+Given a WoS unique identifier (UID), returns the articles that cite it.
+This is useful for forward citation tracking — discovering newer work
+that builds on a specific paper.
+
+## Input Constraints:
+- unique_id: Required. A Web of Science UID, e.g. "WOS:000270372400005".
+- max_results: 1-100, default 10.
+- publish_time_span: Optional date range in yyyy-mm-dd+yyyy-mm-dd format.
+- sort_field: Optional sort. Examples: "TC+D" (times cited desc), "PY+D" (pub year desc).
+
+## Example:
+wos_citing_articles(unique_id="WOS:000270372400005", max_results=20, sort_field="TC+D")
+""",
+)
+async def wos_citing_articles(
+    unique_id: str = Field(
+        ...,
+        min_length=4,
+        max_length=200,
+        description="Web of Science UID of the paper, e.g. 'WOS:000270372400005'",
+    ),
+    max_results: int = Field(
+        default=10,
+        ge=1,
+        le=100,
+        description="Maximum number of citing articles to return (1-100).",
+    ),
+    publish_time_span: Optional[str] = Field(
+        default=None,
+        description="Optional date range filter, format: yyyy-mm-dd+yyyy-mm-dd (e.g. '2020-01-01+2024-12-31').",
+    ),
+    sort_field: Optional[str] = Field(
+        default=None,
+        description="Optional sort. Field+order, e.g. 'TC+D' (times cited desc), 'PY+D' (pub year desc).",
+    ),
+) -> str:
+    try:
+        wos_searcher = engine2searcher.get('wos')
+        if not wos_searcher or not isinstance(wos_searcher, WOSSearcher):
+            return "Error: Web of Science source is not enabled. Enable 'wos' in ACADEMIC_MCP_ENABLED_SOURCES."
+
+        papers = wos_searcher.citing_articles(
+            unique_id=unique_id,
+            max_results=max_results,
+            publish_time_span=publish_time_span,
+            sort_field=sort_field,
+        )
+        if not papers:
+            return f"No citing articles found for {unique_id}."
+
+        texts = [paper2text(p) for p in papers]
+        header = f"Found {len(papers)} article(s) citing {unique_id}:\n\n"
+        return header + "\n\n".join(texts)
+    except Exception as e:
+        logger.error(f"Error in wos_citing_articles: {e}\n{traceback.format_exc()}")
+        return f"Error finding citing articles: {e}"
+
+
+@mcp.tool(
+    name="wos_references",
+    description="""Get the cited references (bibliography) of a Web of Science paper.
+
+Given a WoS unique identifier (UID), returns the references cited by that paper.
+This is useful for backward citation tracking — discovering foundational work
+that a paper builds upon.
+
+Note: The /references endpoint returns lightweight reference records
+(author, title, year, DOI, times cited) rather than full paper metadata.
+
+## Input Constraints:
+- unique_id: Required. A Web of Science UID, e.g. "WOS:000270372400005".
+- max_results: 1-100, default 10.
+- sort_field: Optional sort string.
+
+## Example:
+wos_references(unique_id="WOS:000270372400005", max_results=50)
+""",
+)
+async def wos_references(
+    unique_id: str = Field(
+        ...,
+        min_length=4,
+        max_length=200,
+        description="Web of Science UID of the paper, e.g. 'WOS:000270372400005'",
+    ),
+    max_results: int = Field(
+        default=10,
+        ge=1,
+        le=100,
+        description="Maximum number of references to return (1-100).",
+    ),
+    sort_field: Optional[str] = Field(
+        default=None,
+        description="Optional sort string.",
+    ),
+) -> str:
+    try:
+        wos_searcher = engine2searcher.get('wos')
+        if not wos_searcher or not isinstance(wos_searcher, WOSSearcher):
+            return "Error: Web of Science source is not enabled. Enable 'wos' in ACADEMIC_MCP_ENABLED_SOURCES."
+
+        refs = wos_searcher.references(
+            unique_id=unique_id,
+            max_results=max_results,
+            sort_field=sort_field,
+        )
+        if not refs:
+            return f"No references found for {unique_id}."
+
+        lines = []
+        for i, ref in enumerate(refs, 1):
+            parts = [f"[{i}]"]
+            if ref.cited_author:
+                parts.append(f"Author: {ref.cited_author}")
+            if ref.cited_title:
+                parts.append(f"Title: {ref.cited_title}")
+            if ref.cited_work:
+                parts.append(f"Source: {ref.cited_work}")
+            if ref.year:
+                parts.append(f"Year: {ref.year}")
+            if ref.doi:
+                parts.append(f"DOI: {ref.doi}")
+            if ref.uid:
+                parts.append(f"UID: {ref.uid}")
+            parts.append(f"Times Cited: {ref.times_cited}")
+            if ref.page:
+                parts.append(f"Page: {ref.page}")
+            lines.append("\n".join(parts))
+
+        header = f"Found {len(refs)} reference(s) cited by {unique_id}:\n\n"
+        return header + "\n\n".join(lines)
+    except Exception as e:
+        logger.error(f"Error in wos_references: {e}\n{traceback.format_exc()}")
+        return f"Error finding references: {e}"
+
+
+@mcp.tool(
+    name="wos_related_records",
+    description="""Find related records for a Web of Science paper.
+
+Related records share cited references with the specified paper, helping
+you discover papers in the same research neighbourhood that you might
+not find through keyword search alone.
+
+## Input Constraints:
+- unique_id: Required. A Web of Science UID, e.g. "WOS:000270372400005".
+- max_results: 1-100, default 10.
+- publish_time_span: Optional date range in yyyy-mm-dd+yyyy-mm-dd format.
+- sort_field: Optional sort string.
+
+## Example:
+wos_related_records(unique_id="WOS:000270372400005", max_results=10)
+""",
+)
+async def wos_related_records(
+    unique_id: str = Field(
+        ...,
+        min_length=4,
+        max_length=200,
+        description="Web of Science UID of the paper, e.g. 'WOS:000270372400005'",
+    ),
+    max_results: int = Field(
+        default=10,
+        ge=1,
+        le=100,
+        description="Maximum number of related records to return (1-100).",
+    ),
+    publish_time_span: Optional[str] = Field(
+        default=None,
+        description="Optional date range filter, format: yyyy-mm-dd+yyyy-mm-dd.",
+    ),
+    sort_field: Optional[str] = Field(
+        default=None,
+        description="Optional sort. Field+order, e.g. 'TC+D' (times cited desc), 'PY+D' (pub year desc).",
+    ),
+) -> str:
+    try:
+        wos_searcher = engine2searcher.get('wos')
+        if not wos_searcher or not isinstance(wos_searcher, WOSSearcher):
+            return "Error: Web of Science source is not enabled. Enable 'wos' in ACADEMIC_MCP_ENABLED_SOURCES."
+
+        papers = wos_searcher.related_records(
+            unique_id=unique_id,
+            max_results=max_results,
+            publish_time_span=publish_time_span,
+            sort_field=sort_field,
+        )
+        if not papers:
+            return f"No related records found for {unique_id}."
+
+        texts = [paper2text(p) for p in papers]
+        header = f"Found {len(papers)} record(s) related to {unique_id}:\n\n"
+        return header + "\n\n".join(texts)
+    except Exception as e:
+        logger.error(f"Error in wos_related_records: {e}\n{traceback.format_exc()}")
+        return f"Error finding related records: {e}"
+
+# endregion wos_citation_tools
 
 
 app = typer.Typer(add_completion=False)
