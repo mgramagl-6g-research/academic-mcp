@@ -37,7 +37,6 @@ from .sources.core import CORESearcher
 mcp = FastMCP("academic_mcp")
 
 SAVE_PATH = os.getenv("ACADEMIC_MCP_DOWNLOAD_PATH", "./downloads")
-os.makedirs(SAVE_PATH, exist_ok=True)
 
 # All available searchers
 ALL_SEARCHERS: Dict[str, PaperSource] = {
