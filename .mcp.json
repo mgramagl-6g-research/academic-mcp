@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "academic-mcp": {
+      "command": "academic-mcp",
+      "args": [],
+      "env": {
+        "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
+      }
+    }
+  }
+}
