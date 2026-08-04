@@ -6,6 +6,22 @@
       "env": {
         "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
       }
+    },
+    "academic-mcp2": {
+      "command": "python",
+      "args": ["-m", "academic_mcp"],
+      "env": {
+        "SEMANTIC_SCHOLAR_API_KEY": "",
+        "SCIENCEDIRECT_API_KEY": "",
+        "SPRINGER_API_KEY": "",
+        "IEEE_API_KEY": "",
+        "SCOPUS_API_KEY": "",
+        "CORE_API_KEY": "",
+        "WOS_API_KEY": "",
+        "ACADEMIC_MCP_ENABLED_SOURCES": "arxiv,pubmed,pmc,biorxiv,medrxiv,semantic,core,crossref,google_scholar,iacr",
+        "ACADEMIC_MCP_DISABLED_SOURCES": "ieee,scopus,springer,sciencedirect,wos,acm,jstor",
+        "ACADEMIC_MCP_DOWNLOAD_PATH": "./downloads"
+      }
     }
   }
 }
