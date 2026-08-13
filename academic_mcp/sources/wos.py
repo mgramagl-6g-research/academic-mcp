@@ -27,16 +27,27 @@ class WOSReference:
     page: Optional[str]
 
 class WOSSearcher(PaperSource):
-    """Searcher for Web of Science papers using Expanded API.
+    """Searcher for Web of Science papers using the Clarivate Web of Science Expanded API.
 
-    Note: Requires API key from Clarivate Analytics
+    Requires an institutional Expanded API subscription; key from
+    https://developer.clarivate.com/apis/wos
     Set environment variable: WOS_API_KEY
+
+    Supported field tags for advanced search queries:
+    TS, TI, AU, PY, SO, DO, UT, PMID, OG, FPY, DOP, DT, AI, IS, VL, PG, CS, SUR
+
+    If the query does not begin with a known field tag, it is automatically
+    wrapped in TS=(...) for a topic search (title + abstract + keywords).
     """
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.environ.get('WOS_API_KEY', '')
         if not self.api_key:
-            logger.warning("Web of Science API key not set. Set WOS_API_KEY environment variable.")
+            logger.warning(
+                "Web of Science API key not set. "
+                "Set WOS_API_KEY environment variable or obtain a key from "
+                "https://developer.clarivate.com/apis/wos"
+            )
 
     # ------------------------------------------------------------------ #
     #  Internal helpers                                                    #
@@ -132,7 +143,6 @@ class WOSSearcher(PaperSource):
     # ------------------------------------------------------------------ #
 
     def search(self, query: str, max_results: int = 10) -> List[Paper]:
-        """Search Web of Science for papers"""
         if not self.api_key:
             logger.error("API key required for Web of Science search")
             return []
@@ -336,13 +346,12 @@ class WOSSearcher(PaperSource):
 
         try:
             reader = PdfReader(pdf_path)
-            text = ""
-            for page in reader.pages:
-                text += page.extract_text() + "\n"
+            text = "".join((page.extract_text() or "") + "\n" for page in reader.pages)
             return text.strip()
         except Exception as e:
             logger.error(f"Error reading PDF for {paper_id}: {e}")
             return ""
+
 
 if __name__ == "__main__":
     searcher = WOSSearcher()

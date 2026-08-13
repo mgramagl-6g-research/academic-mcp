@@ -24,7 +24,6 @@ class SciHubFetcher:
         """Initialize with Sci-Hub URL and output directory."""
         self.base_url = base_url.rstrip("/")
         self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
         self.session = requests.Session()
         self.session.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -68,6 +67,7 @@ class SciHubFetcher:
 
             # Generate filename and save
             filename = self._generate_filename(response, identifier)
+            self.output_dir.mkdir(parents=True, exist_ok=True)
             file_path = self.output_dir / filename
 
             with open(file_path, 'wb') as f:

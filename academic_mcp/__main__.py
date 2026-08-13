@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Literal, Optional, cast
 
 import httpx
 from loguru import logger
-from fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP
 from mcp.types import TextContent
 from pydantic import BaseModel, Field, field_validator, model_validator
 import typer
@@ -39,7 +39,6 @@ from .sources.unpaywall import UnpaywallSearcher
 mcp = FastMCP("academic_mcp")
 
 SAVE_PATH = os.getenv("ACADEMIC_MCP_DOWNLOAD_PATH", "./downloads")
-os.makedirs(SAVE_PATH, exist_ok=True)
 
 # All available searchers
 ALL_SEARCHERS: Dict[str, PaperSource] = {
@@ -196,23 +195,34 @@ def expand_query(query_list: list[PaperQuery]) -> list[PaperQuery]:
 async def async_search_per_query(query: PaperQuery) -> List[Paper]:
     searcher = engine2searcher.get(query.searcher)
     if not searcher:
+        logger.warning(f"Searcher '{query.searcher}' not found or disabled")
         return []
-    papers = []
-    if query.searcher == "iacr" and "iacr" in engine2searcher:
-        papers = searcher.search(query.query, query.max_results, query.fetch_details)
-    elif query.searcher == "semantic" and "semantic" in engine2searcher:
-        papers = searcher.search(query.query, query.year, query.max_results)
-    elif query.searcher == "crossref" and "crossref" in engine2searcher:
-        kwargs = query.kwargs if query.kwargs else {}
-        papers = searcher.search(query.query, query.max_results, **kwargs)
-    else:
-        papers = await async_search(searcher, query.query, query.max_results)
-    return papers
+    try:
+        papers = []
+        if query.searcher == "iacr" and "iacr" in engine2searcher:
+            papers = searcher.search(query.query, query.max_results, query.fetch_details)
+        elif query.searcher == "semantic" and "semantic" in engine2searcher:
+            papers = searcher.search(query.query, query.year, query.max_results)
+        elif query.searcher == "crossref" and "crossref" in engine2searcher:
+            kwargs = query.kwargs if query.kwargs else {}
+            papers = searcher.search(query.query, query.max_results, **kwargs)
+        else:
+            papers = await async_search(searcher, query.query, query.max_results)
+        return papers
+    except Exception as e:
+        logger.error(f"Error searching {query.searcher} for '{query.query}': {e}")
+        return []
 
 
 async def async_search_per_query_list(query_list: List[PaperQuery]) -> List[Paper]:
-    all_papers = await asyncio.gather(*[async_search_per_query(query) for query in query_list])
-    papers = sum(all_papers, [])
+    all_papers = await asyncio.gather(*[async_search_per_query(query) for query in query_list], return_exceptions=True)
+    papers = []
+    for result in all_papers:
+        if isinstance(result, Exception):
+            logger.error(f"Search query failed with exception: {result}")
+            continue
+        if isinstance(result, list):
+            papers.extend(result)
     return papers
 
 
@@ -240,16 +250,26 @@ paper_search([
 ])
 """,
 )
-async def paper_search(query_list: List[PaperQuery]) -> Dict[str, List[TextContent]]:
+async def paper_search(query_list: List[PaperQuery]) -> str:
     async with httpx.AsyncClient() as client:
-        expanded_queries = expand_query(query_list)
-        papers = await xmap_async(expanded_queries, async_search_per_query_list, is_async_work_func=True, desc="Searching papers", is_batch_work_func=True, batch_size=1)
+        try:
+            expanded_queries = expand_query(query_list)
+            papers = await xmap_async(expanded_queries, async_search_per_query_list, is_async_work_func=True, desc="Searching papers", is_batch_work_func=True, batch_size=1)
+        except Exception as e:
+            logger.error(f"Search failed: {e}\n{traceback.format_exc()}")
+            return f"Search failed due to an internal error: {e}"
         texts = []
         for paper in papers:
             if isinstance(paper, dict) and "error" in paper:
-                pass
-            else:
+                logger.warning(f"Skipping error result: {paper.get('error', 'unknown')}: {paper.get('message', '')}")
+                continue
+            if paper is None:
+                continue
+            try:
                 texts.append(paper2text(cast(Paper, paper)))
+            except Exception as e:
+                logger.warning(f"Error converting paper to text: {e}")
+                continue
         content = "\n\n".join(texts) if texts else "No papers found."
         return content
     content = "No papers found."
@@ -352,8 +372,14 @@ paper_download([
 )
 async def paper_download(query_list: List[PaperDownloadQuery]) -> List[str]:
     async with httpx.AsyncClient() as client:
-        pdf_paths = await xmap_async(query_list, async_download_per_query, is_async_work_func=True, desc="Downloading papers")
-        return pdf_paths
+        try:
+            pdf_paths = await xmap_async(query_list, async_download_per_query, is_async_work_func=True, desc="Downloading papers")
+            # Filter out error strings and None values
+            pdf_paths = [p for p in pdf_paths if p and isinstance(p, str)]
+            return pdf_paths
+        except Exception as e:
+            logger.error(f"Download failed: {e}\n{traceback.format_exc()}")
+            return [f"Download failed due to an internal error: {e}"]
     return []
 # endregion paper_download
 
@@ -667,15 +693,17 @@ def run(
     默认使用 stdio（适配 MCP 客户端）。如需网络服务（SSE/HTTP），设置环境变量：
     - `ACADEMIC_MCP_TRANSPORT=sse` 或 `ACADEMIC_MCP_TRANSPORT=streamable-http`
     """
-    log_level = "debug" if debug else "info"
+    mcp.settings.host = host
+    mcp.settings.port = port
+    mcp.settings.log_level = "DEBUG" if debug else "INFO"
 
     if not transport or transport == "stdio":
         logger.info("Starting Academic MCP server with stdio transport")
-        mcp.run(transport="stdio", log_level=log_level)
+        mcp.run(transport="stdio")
         return
 
     logger.info(f"Starting Academic MCP server on {host}:{port} with transport '{transport}'")
-    mcp.run(transport=transport, host=host, port=port, log_level=log_level)
+    mcp.run(transport=transport)
 
 
 def main() -> None:
