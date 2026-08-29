@@ -19,7 +19,7 @@ class ArxivSearcher(PaperSource):
         params = {
             'search_query': query,
             'max_results': max_results,
-            'sortBy': 'submittedDate',
+            'sortBy': 'relevance',
             'sortOrder': 'descending'
         }
         response = requests.get(self.BASE_URL, params=params)
